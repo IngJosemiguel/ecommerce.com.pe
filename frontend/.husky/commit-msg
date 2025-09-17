@@ -1,0 +1,186 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Commit message hook para validar formato de mensajes
+echo "📝 Validando mensaje de commit..."
+
+# Obtener el archivo del mensaje de commit
+commit_msg_file="$1"
+
+# Leer el mensaje de commit
+commit_msg=$(cat "$commit_msg_file")
+
+# Función para mostrar errores
+show_error() {
+  echo "❌ $1"
+}
+
+# Función para mostrar éxito
+show_success() {
+  echo "✅ $1"
+}
+
+# Función para mostrar ayuda
+show_help() {
+  echo "\n📋 Formato de commit convencional:"
+  echo "   <tipo>[scope opcional]: <descripción>"
+  echo "\n   [cuerpo opcional]"
+  echo "\n   [footer opcional]"
+  echo "\n🏷️ Tipos válidos:"
+  echo "   • feat:     Nueva funcionalidad"
+  echo "   • fix:      Corrección de bug"
+  echo "   • docs:     Cambios en documentación"
+  echo "   • style:    Cambios de formato (espacios, comas, etc.)"
+  echo "   • refactor: Refactorización de código"
+  echo "   • test:     Agregar o modificar tests"
+  echo "   • chore:    Tareas de mantenimiento"
+  echo "   • perf:     Mejoras de rendimiento"
+  echo "   • ci:       Cambios en CI/CD"
+  echo "   • build:    Cambios en build system"
+  echo "   • revert:   Revertir commits anteriores"
+  echo "\n📝 Ejemplos válidos:"
+  echo "   feat(auth): agregar login con Google"
+  echo "   fix(api): corregir validación de email"
+  echo "   docs(readme): actualizar instrucciones de instalación"
+  echo "   style: formatear código con prettier"
+  echo "   refactor(utils): simplificar función de validación"
+  echo "   test(auth): agregar tests para login"
+  echo "   chore(deps): actualizar dependencias"
+  echo "\n🔍 Reglas:"
+  echo "   • Usar minúsculas"
+  echo "   • No terminar con punto"
+  echo "   • Máximo 72 caracteres en la primera línea"
+  echo "   • Usar modo imperativo (\"agregar\" no \"agregado\")"
+}
+
+# Verificar si el mensaje está vacío
+if [ -z "$commit_msg" ] || [ "$commit_msg" = "" ]; then
+  show_error "El mensaje de commit no puede estar vacío"
+  show_help
+  exit 1
+fi
+
+# Obtener la primera línea del mensaje
+first_line=$(echo "$commit_msg" | head -n1)
+
+# Verificar longitud de la primera línea
+if [ ${#first_line} -gt 72 ]; then
+  show_error "La primera línea del mensaje es muy larga (${#first_line} caracteres, máximo 72)"
+  echo "\n📏 Mensaje actual: $first_line"
+  echo "\n💡 Intenta ser más conciso o usa el cuerpo del mensaje para detalles adicionales"
+  show_help
+  exit 1
+fi
+
+# Verificar que no termine con punto
+if echo "$first_line" | grep -q '\.$'; then
+  show_error "El mensaje de commit no debe terminar con punto"
+  echo "\n📏 Mensaje actual: $first_line"
+  show_help
+  exit 1
+fi
+
+# Verificar formato convencional
+if echo "$first_line" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+'; then
+  # Verificar que esté en minúsculas (excepto acrónimos conocidos)
+  if echo "$first_line" | grep -qE '^[a-z]+(\([a-zA-Z0-9-]+\))?: [a-z]'; then
+    show_success "Formato de commit válido"
+    
+    # Verificaciones adicionales opcionales
+    
+    # Verificar palabras prohibidas
+    prohibited_words="WIP|TODO|FIXME|HACK|XXX"
+    if echo "$commit_msg" | grep -qiE "($prohibited_words)"; then
+      echo "⚠️ El mensaje contiene palabras que sugieren trabajo incompleto"
+      echo "💡 Considera completar el trabajo antes del commit"
+    fi
+    
+    # Verificar que no sea muy genérico
+    generic_messages="update|change|modify|improve|enhance|optimize"
+    if echo "$first_line" | grep -qiE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: ($generic_messages)$"; then
+      echo "⚠️ El mensaje es muy genérico"
+      echo "💡 Intenta ser más específico sobre qué cambios realizaste"
+    fi
+    
+    # Verificar referencias a issues (opcional)
+    if echo "$commit_msg" | grep -qE '#[0-9]+'; then
+      show_success "Referencia a issue detectada"
+    fi
+    
+    # Verificar breaking changes
+    if echo "$commit_msg" | grep -qiE 'BREAKING CHANGE|!:'; then
+      echo "🚨 Breaking change detectado"
+      echo "💡 Asegúrate de documentar los cambios incompatibles"
+    fi
+    
+    exit 0
+  else
+    show_error "El mensaje debe comenzar con minúscula"
+    echo "\n📏 Mensaje actual: $first_line"
+    show_help
+    exit 1
+  fi
+else
+  show_error "El mensaje no sigue el formato convencional"
+  echo "\n📏 Mensaje actual: $first_line"
+  
+  # Intentar sugerir correcciones
+  echo "\n🔧 Posibles correcciones:"
+  
+  # Si parece que falta el tipo
+  if echo "$first_line" | grep -qE '^[A-Z]'; then
+    echo "   • Agregar tipo: feat: $(echo "$first_line" | tr '[:upper:]' '[:lower:]')"
+  fi
+  
+  # Si parece que tiene el formato pero tipo incorrecto
+  if echo "$first_line" | grep -qE '^[a-z]+:'; then
+    current_type=$(echo "$first_line" | cut -d':' -f1)
+    echo "   • Tipo '$current_type' no es válido"
+    echo "   • Tipos válidos: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+  fi
+  
+  # Si no tiene dos puntos
+  if ! echo "$first_line" | grep -q ':'; then
+    echo "   • Agregar dos puntos después del tipo: feat: $first_line"
+  fi
+  
+  show_help
+  exit 1
+fi
+
+# Verificaciones adicionales para el cuerpo del mensaje
+if [ $(echo "$commit_msg" | wc -l) -gt 1 ]; then
+  # Verificar línea en blanco después del título
+  second_line=$(echo "$commit_msg" | sed -n '2p')
+  if [ -n "$second_line" ]; then
+    echo "⚠️ Debe haber una línea en blanco entre el título y el cuerpo"
+    echo "\n💡 Formato correcto:"
+    echo "   feat(scope): título"
+    echo "   "
+    echo "   Cuerpo del mensaje explicando los cambios..."
+  fi
+  
+  # Verificar longitud de líneas del cuerpo
+  body_lines=$(echo "$commit_msg" | tail -n +3)
+  while IFS= read -r line; do
+    if [ ${#line} -gt 72 ]; then
+      echo "⚠️ Línea del cuerpo muy larga (${#line} caracteres): $line"
+      echo "💡 Intenta mantener las líneas del cuerpo bajo 72 caracteres"
+    fi
+  done <<< "$body_lines"
+fi
+
+# Verificar encoding
+if ! echo "$commit_msg" | iconv -f utf-8 -t utf-8 > /dev/null 2>&1; then
+  show_error "El mensaje contiene caracteres no válidos (debe ser UTF-8)"
+  exit 1
+fi
+
+# Verificar caracteres especiales problemáticos
+if echo "$commit_msg" | grep -q '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'; then
+  show_error "El mensaje contiene caracteres de control no válidos"
+  exit 1
+fi
+
+show_success "Mensaje de commit válido y bien formateado"
+exit 0

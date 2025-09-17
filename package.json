@@ -1,0 +1,37 @@
+{
+  "name": "ecommerce-fullstack",
+  "version": "1.0.0",
+  "description": "Aplicación de ecommerce fullstack con React y Node.js",
+  "main": "build-and-start.js",
+  "scripts": {
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build": "npm run build:frontend",
+    "start": "cd backend && npm start",
+    "build-and-start": "node build-and-start.js",
+    "production": "npm run build && npm start",
+    "deploy:prepare": "node deploy-to-vercel.js",
+    "vercel:deploy": "vercel --prod"
+  },
+  "keywords": [
+    "ecommerce",
+    "react",
+    "nodejs",
+    "sqlite",
+    "fullstack"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
