@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Development files
+*.log
+*.env.local
+*.env.development
+*.env.test
+
+# Build artifacts
+frontend/dist/
+backend/uploads/
+
+# Database files
+*.sqlite
+*.db
+database.sqlite
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage/
+*.test.js
+*.spec.js
+
+# Documentation
+*.md
+!README.md
+!VERCEL_DEPLOYMENT.md
+
+# Git
+.git/
+.gitignore
+
+# Temporary files
+tmp/
+temp/
